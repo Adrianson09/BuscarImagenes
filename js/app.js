@@ -2,7 +2,11 @@
 
 const resultado = document.querySelector('#resultado');
 const formulario = document.querySelector('#formulario');
+const paginacionDiv = document.querySelector('#paginacion');
 const registrosPorPagina = 40;
+let totalPaginas;
+let iterador;
+let paginaActual = 1;
 
 
 window.onload = () => {
@@ -19,7 +23,7 @@ function validarFormulario(e){
         mostrarAlerta('agrega un termino de busqueda');
         return;
     }
-    buscarImagenes(terminoBusqueda);
+    buscarImagenes();
 }
 
 function mostrarAlerta(mensaje){
@@ -42,17 +46,28 @@ function mostrarAlerta(mensaje){
 
 }
 
-function buscarImagenes(termino){
+function buscarImagenes(){
+    const termino = document.querySelector('#termino').value;
+
     const key ='38238248-ae984a2fad41f6c4f55a7873f';
-    const url = `https://pixabay.com/api/?key=${key}&q=${termino}&per_page=100`;
+    const url = `https://pixabay.com/api/?key=${key}&q=${termino}&per_page=${registrosPorPagina}&page=${paginaActual}`;
 
     fetch(url)
     .then(respuesta => respuesta.json())
     .then(resultado => {
+         totalPaginas = calcularPaginas(resultado.totalHits)
         mostrarImagenes(resultado.hits)
     })
 
 }
+// Generador de cantidad de elementos por pagina
+
+function *crearPaginador(total){
+    for (let i = 1; i <= total; i++) {
+        yield i;
+    }
+}
+
 function calcularPaginas(total){
     return parseInt( Math.ceil(total / registrosPorPagina ));
 }
@@ -82,5 +97,32 @@ function mostrarImagenes(imagenes){
         </div>
         `
     });
+    // limpiar el paginador previo
+    while (paginacionDiv.firstChild) {
+        paginacionDiv.removeChild(paginacionDiv.firstChild)
+    }
+    // generamos el HTML
+    imprimirPaginador();
+}
+
+function imprimirPaginador(){
+    iterador = crearPaginador(totalPaginas);
+    while (true) {
+        const {value, done} = iterador.next();
+        if (done) return;
+
+        // caso contrario, genera un btn por cada elemento
+        const boton = document.createElement('A');
+        boton.href ='#';
+        boton.dataset.pagina = value;
+        boton.textContent = value;
+        boton.classList.add('siguente', 'bg-yellow-400', 'px-4','py-1', 'mr-2', 'font-bold','mb-4', 'rounded' );
+
+        boton.onclick = () =>{
+            paginaActual = value
+            buscarImagenes();
+        }
+        paginacionDiv.appendChild(boton);
+    }
 
 }
